@@ -6,6 +6,7 @@ from CTFd.models import db, Challenges, Files, Solves, WrongKeys, Keys
 import time
 import re
 import logging
+import os
 
 def init_challenges(app):
     @app.route('/challenges', methods=['GET'])
@@ -23,7 +24,7 @@ def init_challenges(app):
             return redirect('/')
         if can_view_challenges():
             chals = Challenges.query.add_columns('id', 'name', 'value', 'description', 'category').order_by(Challenges.value).all()
-            
+
             json = {'game':[]}
             for x in chals:
                 files = [ str(f.location) for f in Files.query.filter_by(chal=x.id).all() ]
@@ -39,7 +40,7 @@ def init_challenges(app):
     def chals_per_solves():
         if can_view_challenges():
             solves = Solves.query.add_columns(db.func.count(Solves.chalid)).group_by(Solves.chalid).all()
-            json = {}        
+            json = {}
             for chal, count in solves:
                 json[chal.chal.name] = count
             return jsonify(json)
@@ -118,11 +119,23 @@ def init_challenges(app):
                             db.session.close()
                             logger.info("[{0}] {1} submitted {2} with kpm {3} [CORRECT]".format(*data))
                             return "1" # key was correct
-                    elif x.key_type == 1: #regex 
+                    elif x.key_type == 1: #regex
                         res = re.match(str(x), key, re.IGNORECASE)
                         if res and res.group() == key:
                             solve = Solves(chalid=chalid, teamid=session['id'], ip=request.remote_addr)
                             db.session.add(solve)
+                            db.session.commit()
+                            db.session.close()
+                            chal = Challenges.query.filter_by(id=chalid).one()
+                            realkey = key[key.find("rc3flag[")+8:key.rfind("]")]
+                            with open("solves.txt", "a") as f:
+                                f.write(json_mod.dumps({"category": chal.category, "name": chal.name, "key": realkey}))
+                                f.write("\n")
+                            x.flag = realkey
+                            x.key_type = 0
+                            chal.description = "This challenge was solved before by someone else! If you are sure you found the key and it is wrong, let an admin know so we can fix it."
+                            db.session.add(x)
+                            db.session.add(chal)
                             db.session.commit()
                             db.session.close()
                             logger.info("[{0}] {1} submitted {2} with kpm {3} [CORRECT]".format(*data))

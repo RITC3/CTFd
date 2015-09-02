@@ -12,7 +12,10 @@ import os
 import sys
 import json
 
-CPC = 5 #challenges per category
+try:
+    CPC = int(sys.argv[1]) #challenges per category
+except:
+    CPC = 5
 UNSOLVED = "We need to recover the flag from this challenge! If you find it, submit with the format RC3FLAG[put the flag you found here]"
 SOLVED = "This challenge was solved before by someone else! If you are sure you found the key and it is wrong, let an admin know so we can fix it."
 
@@ -68,6 +71,17 @@ with app.app_context():
     db.session.add(Teams("rc3" , "rc3@rc3.club", "rc3"))
     ctf_name = Config('ctf_name', "RC3RandCTF")
     page = Pages('index', '<div class="row"><h1>Welcome to RC3 RandCTF, the randomly generated CTF board based on shell-storm.org\'s CTF repo and CTFd!</h1></div>')
+    page2 = Pages('whatsactf', '''
+        <div class="row">
+        <h1>What is a CTF?</h1>
+        <p>At the core: problem solving. CTFs require you to think outside the box to solve problems.</p>
+        <p>These problems can be as simple as zooming in on an image or as difficult as reverse engineering and exploiting a remote program</p>
+
+        <h1>Resources</h1>
+        CTF challenge repo (where all of these challenges are from): <a href="http://shell-storm.org/repo/CTF/">http://shell-storm.org/repo/CTF/</a><br>
+        CTF solution repo: <a href="https://github.com/ctfs">https://github.com/ctfs</a>
+        </div>
+    ''')
     max_tries = Config("max_tries", 0)
     start = Config('start', None)
     end = Config('end', None)
@@ -76,6 +90,7 @@ with app.app_context():
     setup = Config('setup', True)
     db.session.add(ctf_name)
     db.session.add(page)
+    db.session.add(page2)
     db.session.add(max_tries)
     db.session.add(start)
     db.session.add(end)
